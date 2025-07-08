@@ -1,0 +1,30 @@
+{
+  "screen_width": 800,
+  "screen_height": 600,
+  "fps": 60,
+  "master_volume": 0.7,
+  "music_volume": 0.8,
+  "sfx_volume": 0.5,
+  "key_bindings": {
+    "lane_0": "d",
+    "lane_1": "f",
+    "lane_2": "j",
+    "lane_3": "k",
+    "pause": "space",
+    "restart": "r",
+    "quit": "escape"
+  },
+  "note_speed": 300,
+  "judgment_tolerances": {
+    "perfect": 0.08,
+    "great": 0.15,
+    "good": 0.25
+  },
+  "auto_download": true,
+  "debug_mode": false,
+  "audio_delay": 0.15,
+  "visual_offset": 0,
+  "perfect_tolerance": 0.05,
+  "great_tolerance": 0.1,
+  "good_tolerance": 0.15
+}

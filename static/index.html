@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>節奏遊戲 - Rhythm Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 導航欄 -->
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-left">
+                    <img src="icon/icon.png" alt="RhythmeForge Logo" class="nav-logo">
+                    <h1 class="nav-title">RhythmeForge</h1>
+                </div>
+                <div class="nav-menu">
+                    <button class="nav-btn" data-page="download">
+                        <i class="fas fa-download"></i> 下載音樂
+                    </button>
+                    <button class="nav-btn" data-page="generate">
+                        <i class="fas fa-waveform-lines"></i> 生成譜面
+                    </button>
+                    <button class="nav-btn" data-page="charts">
+                        <i class="fas fa-list"></i> 可用譜面
+                    </button>
+                    <button class="nav-btn" data-page="settings">
+                        <i class="fas fa-cog"></i> 設定
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主內容區域 -->
+        <main class="main-content">
+            <!-- 下載音樂頁面 -->
+            <div id="download-page" class="page active">
+                <div class="page-header">
+                    <h2><i class="fas fa-download"></i> 下載 YouTube 音樂</h2>
+                    <p>輸入 YouTube 連結來下載音樂</p>
+                </div>
+                
+                <div class="download-form">
+                    <div class="input-group">
+                        <input type="text" id="youtube-url" placeholder="貼上 YouTube 連結...">
+                        <button id="download-btn" class="btn-primary">
+                            <i class="fas fa-download"></i> 下載
+                        </button>
+                    </div>
+                </div>
+
+                <div id="download-progress" class="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-text">下載中...</div>
+                </div>
+
+                <div id="download-result" class="result-container"></div>
+            </div>
+
+            <!-- 生成譜面頁面 -->
+            <div id="generate-page" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-waveform-lines"></i> 分析音樂並生成譜面</h2>
+                    <p>選擇已下載的音樂或上傳音樂檔案來生成遊戲譜面</p>
+                </div>
+
+                <!-- 上傳音樂區域 -->
+                <div class="upload-section">
+                    <h3><i class="fas fa-upload"></i> 上傳音樂檔案</h3>
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>拖放音樂檔案到此處或點擊選擇</p>
+                            <p class="upload-hint">支援格式：MP3、WAV</p>
+                            <input type="file" id="music-file-input" accept=".mp3,.wav,audio/mp3,audio/wav" style="display: none;">
+                            <button class="btn-secondary" onclick="document.getElementById('music-file-input').click()">
+                                <i class="fas fa-folder-open"></i> 選擇檔案
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="upload-progress" class="progress-container" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <div class="progress-text">上傳中...</div>
+                    </div>
+                    
+                    <div id="upload-result" class="result-container"></div>
+                </div>
+
+                <div class="audio-files-list">
+                    <h3>可用音樂檔案</h3>
+                    <div id="audio-files" class="files-grid"></div>
+                    <div class="audio-controls">
+                        <button id="refresh-audio-btn" class="btn-secondary">
+                            <i class="fas fa-refresh"></i> 重新整理
+                        </button>
+                        <button id="toggle-select-audio-btn" class="btn-secondary" style="display: none;">
+                            <i class="fas fa-check-square"></i> 全選
+                        </button>
+                        <button id="delete-selected-audio-btn" class="btn-danger" style="display: none;">
+                            <i class="fas fa-trash-alt"></i> 刪除選取
+                        </button>
+                        <div class="selected-count" id="selected-audio-count-display" style="display: none;">
+                            <i class="fas fa-check-circle"></i>
+                            已選取 <span id="selected-audio-count">0</span> 個音樂檔案
+                        </div>
+                    </div>
+                </div>
+
+                <div class="generation-settings">
+                    <h3>譜面生成設定</h3>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="generation-method">生成方法:</label>
+                            <select id="generation-method">
+                                <option value="balanced_beat">平衡節拍分配 (推薦)</option>
+                                <option value="energy">能量分析</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="method-description">方法說明:</label>
+                            <div id="method-description" class="method-description">
+                                <p>平衡節拍分配：基於累積數量平衡各lane，並對齊音樂拍點，產生更平衡且符合節奏的譜面。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="chart-progress" class="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-text">分析中...</div>
+                </div>
+            </div>
+
+            <!-- 可用譜面頁面 -->
+            <div id="charts-page" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-list"></i> 可用譜面</h2>
+                    <p>選擇譜面開始遊戲</p>
+                </div>
+
+                <div class="charts-controls">
+                    <button id="refresh-charts-btn" class="btn-secondary">
+                        <i class="fas fa-refresh"></i> 重新整理
+                    </button>
+                    <button id="toggle-select-charts-btn" class="btn-secondary" style="display: none;">
+                        <i class="fas fa-check-square"></i> 全選
+                    </button>
+                    <button id="delete-selected-charts-btn" class="btn-danger" style="display: none;">
+                        <i class="fas fa-trash-alt"></i> 刪除選取
+                    </button>
+                    <div class="selected-count" id="selected-count-display" style="display: none;">
+                        <i class="fas fa-check-circle"></i>
+                        已選取 <span id="selected-charts-count">0</span> 個譜面
+                    </div>
+                </div>
+
+                <div id="charts-list" class="charts-grid"></div>
+            </div>
+
+            <!-- 設定頁面 -->
+            <div id="settings-page" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-cog"></i> 遊戲設定</h2>
+                    <p>調整遊戲參數以獲得最佳體驗</p>
+                </div>
+
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h3>音符設定</h3>
+                        <div class="setting-item">
+                            <label for="note-speed">音符速度:</label>
+                            <input type="range" id="note-speed" min="100" max="800" value="300">
+                            <span id="note-speed-value">300</span>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>判定容差</h3>
+                        <div class="setting-item">
+                            <label for="perfect-tolerance">Perfect:</label>
+                            <input type="range" id="perfect-tolerance" min="0.01" max="0.1" step="0.01" value="0.05">
+                            <span id="perfect-tolerance-value">0.05s</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="great-tolerance">Great:</label>
+                            <input type="range" id="great-tolerance" min="0.05" max="0.2" step="0.01" value="0.1">
+                            <span id="great-tolerance-value">0.10s</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="good-tolerance">Good:</label>
+                            <input type="range" id="good-tolerance" min="0.1" max="0.3" step="0.01" value="0.15">
+                            <span id="good-tolerance-value">0.15s</span>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>其他設定</h3>
+                        <div class="setting-item">
+                            <label for="debug-mode">Debug 模式:</label>
+                            <input type="checkbox" id="debug-mode">
+                        </div>
+                        <div class="setting-item">
+                            <label for="audio-delay">音頻延遲補償:</label>
+                            <input type="range" id="audio-delay" min="0" max="0.3" step="0.01" value="0.15">
+                            <span id="audio-delay-value">0.15s</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="visual-offset">視覺偏移:</label>
+                            <input type="range" id="visual-offset" min="-0.2" max="0.2" step="0.01" value="0.0">
+                            <span id="visual-offset-value">0.00s</span>
+                        </div>
+                        <div class="setting-help">
+                            <p><strong>校準說明：</strong></p>
+                            <p>• 如果覺得需要提早按才是 Perfect，請增加「音頻延遲補償」</p>
+                            <p>• 如果音符位置與音樂不同步，請調整「視覺偏移」</p>
+                            <p>• 建議先開啟 Debug 模式來查看詳細時間信息</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button id="save-settings-btn" class="btn-primary">
+                            <i class="fas fa-save"></i> 儲存設定
+                        </button>
+                        <button id="reset-settings-btn" class="btn-secondary">
+                            <i class="fas fa-undo"></i> 重置預設
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 通知系統 -->
+        <div id="notifications" class="notifications"></div>
+
+        <!-- 載入中指示器 -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">載入中...</div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

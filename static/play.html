@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遊戲中 - 節奏遊戲</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 遊戲主界面 -->
+        <div id="game-main" class="game-main">
+            <!-- 遊戲 UI -->
+            <div class="game-ui">
+                <div class="game-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">分數</span>
+                        <span id="game-score" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">連擊</span>
+                        <span id="game-combo" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">準確度</span>
+                        <span id="game-accuracy" class="stat-value">100%</span>
+                    </div>
+                </div>
+                
+                <div class="song-info">
+                    <div id="song-title" class="song-title">歌曲標題</div>
+                    <div id="song-bpm" class="song-bpm">BPM: 120</div>
+                </div>
+
+                <div class="game-controls">
+                    <button id="pause-btn" class="control-btn">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button id="restart-btn" class="control-btn">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <button id="quit-btn" class="control-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 遊戲畫面 -->
+            <div class="game-canvas-container">
+                <canvas id="game-canvas"></canvas>
+                
+                <!-- 即時判定顯示 -->
+                <div class="judgment-display" id="judgment-display">
+                    <div class="judgment-text" id="judgment-text"></div>
+                    <div class="combo-display" id="combo-display"></div>
+                </div>
+                
+                <!-- 按鍵提示 -->
+                <div class="key-hints">
+                    <div class="key-hint" data-lane="0">D</div>
+                    <div class="key-hint" data-lane="1">F</div>
+                    <div class="key-hint" data-lane="2">J</div>
+                    <div class="key-hint" data-lane="3">K</div>
+                </div>
+                
+                <!-- 遊戲側邊信息 -->
+                <div class="game-side-info">
+                    <div class="lane-accuracy">
+                        <div class="lane-acc" data-lane="0">
+                            <div class="lane-label">D</div>
+                            <div class="lane-acc-value">100%</div>
+                        </div>
+                        <div class="lane-acc" data-lane="1">
+                            <div class="lane-label">F</div>
+                            <div class="lane-acc-value">100%</div>
+                        </div>
+                        <div class="lane-acc" data-lane="2">
+                            <div class="lane-label">J</div>
+                            <div class="lane-acc-value">100%</div>
+                        </div>
+                        <div class="lane-acc" data-lane="3">
+                            <div class="lane-label">K</div>
+                            <div class="lane-acc-value">100%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 遊戲開始倒計時覆蓋層 -->
+            <div id="game-countdown" class="game-countdown" style="display: none;">
+                <div class="countdown-content">
+                    <div id="countdown-message" class="countdown-message">
+                        <i class="fas fa-keyboard"></i>
+                        <h2>按下 Enter 開始遊戲</h2>
+                        <p>準備好了嗎？</p>
+                        <div class="keyboard-shortcuts">
+                            <small>快捷鍵：ESC 暫停 | R 重新開始</small>
+                        </div>
+                    </div>
+                    <div id="countdown-timer" class="countdown-timer" style="display: none;">
+                        <div class="countdown-number" id="countdown-number">3</div>
+                        <div class="countdown-label">準備開始...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 進度條 -->
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="game-progress" class="progress-fill"></div>
+                </div>
+                <div id="game-time" class="progress-text">00:00 / 00:00</div>
+            </div>
+        </div>
+
+        <!-- 遊戲結果界面 -->
+        <div id="game-results" class="game-results" style="display: none;">
+            <h2>遊戲結束</h2>
+            <div class="results-content">
+                <div class="grade-display">
+                    <div id="final-grade" class="grade">A</div>
+                </div>
+                <div class="results-stats">
+                    <div class="result-stat">
+                        <span class="result-label">最終分數</span>
+                        <span id="final-score" class="result-value">0</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="result-label">最大連擊</span>
+                        <span id="final-combo" class="result-value">0</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="result-label">準確度</span>
+                        <span id="final-accuracy" class="result-value">0%</span>
+                    </div>
+                </div>
+                <div class="judgment-stats">
+                    <div class="judgment-stat perfect">
+                        <span class="judgment-label">Perfect</span>
+                        <span id="perfect-count" class="judgment-value">0</span>
+                    </div>
+                    <div class="judgment-stat great">
+                        <span class="judgment-label">Great</span>
+                        <span id="great-count" class="judgment-value">0</span>
+                    </div>
+                    <div class="judgment-stat good">
+                        <span class="judgment-label">Good</span>
+                        <span id="good-count" class="judgment-value">0</span>
+                    </div>
+                    <div class="judgment-stat miss">
+                        <span class="judgment-label">Miss</span>
+                        <span id="miss-count" class="judgment-value">0</span>
+                    </div>
+                </div>
+                <div class="results-actions">
+                    <button id="restart-game-btn" class="btn-primary">
+                        <i class="fas fa-redo"></i> 重新開始
+                    </button>
+                    <button id="back-to-charts-btn" class="btn-secondary">
+                        <i class="fas fa-list"></i> 選擇其他譜面
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 遊戲暫停界面 -->
+        <div id="game-pause" class="game-pause" style="display: none;">
+            <h2>遊戲暫停</h2>
+            <div class="pause-actions">
+                <button id="resume-btn" class="btn-primary">
+                    <i class="fas fa-play"></i> 繼續遊戲
+                </button>
+                <button id="restart-pause-btn" class="btn-secondary">
+                    <i class="fas fa-redo"></i> 重新開始
+                </button>
+                <button id="quit-pause-btn" class="btn-secondary">
+                    <i class="fas fa-times"></i> 退出遊戲
+                </button>
+            </div>
+        </div>
+
+        <!-- 通知系統 -->
+        <div id="notifications" class="notifications"></div>
+
+        <!-- 載入中指示器 -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">載入中...</div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="play.js"></script>
+</body>
+</html> 
