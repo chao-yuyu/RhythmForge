@@ -360,7 +360,6 @@ class RhythmGame {
             this.startGameLoop();
         }
         
-        this.showNotification('遊戲開始！', 'success');
     }
 
     async loadGameAudio(chartData, play = true) {

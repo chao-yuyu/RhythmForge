@@ -14,7 +14,7 @@
     "restart": "r",
     "quit": "escape"
   },
-  "note_speed": 300,
+  "note_speed": 800,
   "judgment_tolerances": {
     "perfect": 0.08,
     "great": 0.15,
