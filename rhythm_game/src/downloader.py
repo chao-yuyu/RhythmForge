@@ -20,7 +20,7 @@ class YouTubeDownloader:
             filename = filename[:100]
         return filename
     
-    def get_ydl_opts(self, output_template):
+    def get_ydl_opts(self, output_template, progress_callback=None):
         """獲取 yt-dlp 配置選項"""
         # 隨機選擇 User-Agent 以避免被封鎖
         user_agents = [
@@ -31,7 +31,7 @@ class YouTubeDownloader:
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0'
         ]
         
-        return {
+        opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio/best',
             'outtmpl': output_template,
             'postprocessors': [{
@@ -90,13 +90,20 @@ class YouTubeDownloader:
             'sleep_interval_requests': 1,
             'sleep_interval_subtitles': 1,
         }
+        
+        # 如果有進度回調，添加progress_hooks
+        if progress_callback:
+            opts['progress_hooks'] = [progress_callback]
+            
+        return opts
     
-    def download_audio(self, youtube_url):
+    def download_audio(self, youtube_url, progress_callback=None):
         """
         下載 YouTube 音樂為 wav 格式
         
         Args:
             youtube_url (str): YouTube 影片連結
+            progress_callback (callable): 進度回調函數，接收進度資訊
             
         Returns:
             tuple: (下載成功的檔案路徑, 歌曲標題) 或 (None, None) 如果失敗
@@ -139,7 +146,7 @@ class YouTubeDownloader:
                 
                 # 設定下載選項
                 download_template = str(self.download_dir / f'{clean_title}.%(ext)s')
-                download_opts = self.get_ydl_opts(download_template)
+                download_opts = self.get_ydl_opts(download_template, progress_callback)
                 
                 print(f"開始下載音頻...")
                 

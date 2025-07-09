@@ -228,6 +228,47 @@ def download_music():
                     'message': '正在準備下載...'
                 })
                 
+                # 定義進度回調函數
+                def progress_hook(d):
+                    if d['status'] == 'downloading':
+                        # 計算下載進度
+                        if 'total_bytes' in d and d['total_bytes']:
+                            percent = (d['downloaded_bytes'] / d['total_bytes']) * 100
+                            percent = min(percent, 90)  # 最多顯示90%，留10%給後處理
+                        elif 'total_bytes_estimate' in d and d['total_bytes_estimate']:
+                            percent = (d['downloaded_bytes'] / d['total_bytes_estimate']) * 100
+                            percent = min(percent, 90)
+                        else:
+                            # 如果沒有總大小資訊，使用下載速度作為進度指示
+                            percent = min(d.get('downloaded_bytes', 0) / (1024 * 1024) * 10, 90)
+                        
+                        # 格式化下載速度
+                        speed = d.get('speed', 0)
+                        if speed:
+                            if speed > 1024 * 1024:
+                                speed_str = f"{speed / (1024 * 1024):.1f} MB/s"
+                            elif speed > 1024:
+                                speed_str = f"{speed / 1024:.1f} KB/s"
+                            else:
+                                speed_str = f"{speed:.0f} B/s"
+                        else:
+                            speed_str = "計算中..."
+                        
+                        # 發送進度更新
+                        socketio.emit('download_progress', {
+                            'status': 'progress',
+                            'progress': int(percent),
+                            'message': f'下載中... {int(percent)}% ({speed_str})'
+                        })
+                        
+                    elif d['status'] == 'finished':
+                        # 下載完成，開始後處理
+                        socketio.emit('download_progress', {
+                            'status': 'progress',
+                            'progress': 95,
+                            'message': '下載完成，正在轉換音頻格式...'
+                        })
+                
                 # 測試連接
                 logger.info(f"Testing connection before download: {youtube_url}")
                 if not downloader.test_connection():
@@ -240,19 +281,19 @@ def download_music():
                 # 發送分析進度
                 socketio.emit('download_progress', {
                     'status': 'progress',
-                    'progress': 20,
+                    'progress': 5,
                     'message': '正在分析影片資訊...'
                 })
                 
-                # 執行下載
-                audio_path, title = downloader.download_audio(youtube_url)
+                # 執行下載，傳入進度回調
+                audio_path, title = downloader.download_audio(youtube_url, progress_hook)
                 
                 if audio_path:
                     # 發送完成進度
                     socketio.emit('download_progress', {
                         'status': 'progress',
-                        'progress': 90,
-                        'message': '正在完成下載...'
+                        'progress': 98,
+                        'message': '正在驗證檔案...'
                     })
                     
                     # 驗證檔案

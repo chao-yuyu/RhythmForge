@@ -486,9 +486,9 @@ class RhythmGameApp {
         const progressText = progressContainer.querySelector('.progress-text');
         const resultContainer = document.getElementById('download-result');
         
-        if (data.status === 'downloading') {
+        if (data.status === 'progress') {
             progressFill.style.width = `${data.progress}%`;
-            progressText.textContent = `下載中... ${data.progress}%`;
+            progressText.textContent = data.message || `下載中... ${data.progress}%`;
         } else if (data.status === 'processing') {
             progressFill.style.width = '100%';
             progressText.textContent = '處理中...';
@@ -614,7 +614,7 @@ class RhythmGameApp {
         this.selectedAudioFiles.clear();
         
         if (files.length === 0) {
-            container.innerHTML = '<div class="empty-state"><p>沒有找到音樂檔案</p><p>請先下載一些音樂</p></div>';
+            container.innerHTML = '<div class="empty-state"><p>尚未偵測到音樂檔案</p><p>請先下載或上傳音樂檔案以繼續操作</p></div>';
             if (toggleSelectBtn) toggleSelectBtn.style.display = 'none';
             if (deleteSelectedBtn) deleteSelectedBtn.style.display = 'none';
             return;
@@ -743,7 +743,7 @@ class RhythmGameApp {
         this.selectedCharts.clear();
         
         if (charts.length === 0) {
-            container.innerHTML = '<div class="empty-state"><p>沒有找到譜面</p><p>請先生成一些譜面</p></div>';
+            container.innerHTML = '<div class="empty-state"><p>目前尚無可用譜面</p><p>請先產生譜面後再進行後續操作</p></div>';
             if (toggleSelectBtn) toggleSelectBtn.style.display = 'none';
             if (deleteSelectedBtn) deleteSelectedBtn.style.display = 'none';
             return;
