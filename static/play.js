@@ -30,6 +30,7 @@ class RhythmGame {
         this.lastDebugSecond = 0;
         this.countdownTimer = null;
         this.chartPath = null;
+        this.countdownStartTime = 0; // 新增：倒計時開始時間
         
         this.init();
     }
@@ -105,7 +106,6 @@ class RhythmGame {
         this.quitBtn = document.getElementById('quit-btn');
         
         // Game state overlays
-        this.gameCountdown = document.getElementById('game-countdown');
         this.gameResults = document.getElementById('game-results');
         this.gamePause = document.getElementById('game-pause');
         
@@ -249,6 +249,12 @@ class RhythmGame {
             const chartData = responseData.chart;
             this.gameState.chartData = chartData;
             
+            // 載入音符資料到遊戲狀態中（提前載入）
+            if (chartData && chartData.notes) {
+                this.gameState.notes = chartData.notes.slice(); // Make a copy
+                console.log(`Loaded ${this.gameState.notes.length} notes for preview`);
+            }
+            
             // Update UI with chart info
             this.songTitleElement.textContent = chartData.song_title || '未知歌曲';
             this.songBpmElement.textContent = `BPM: ${chartData.bpm || 120}`;
@@ -257,7 +263,11 @@ class RhythmGame {
             await this.loadGameAudio(chartData, false);
             
             this.hideLoading();
-            this.showCountdownOverlay();
+            
+            this.gameState.isWaitingForStart = true;
+            if (!this.gameAnimationId) {
+                this.startGameLoop();
+            }
             
         } catch (error) {
             console.error('Error starting game:', error);
@@ -296,6 +306,7 @@ class RhythmGame {
         
         this.gameStartTime = 0;
         this.lastDebugSecond = 0;
+        this.countdownStartTime = 0;
         
         // Reset UI
         this.updateGameUI();
@@ -304,7 +315,6 @@ class RhythmGame {
         // Hide overlays
         this.gameResults.style.display = 'none';
         this.gamePause.style.display = 'none';
-        this.gameCountdown.style.display = 'none';
     }
 
     resetKeyHints() {
@@ -326,19 +336,16 @@ class RhythmGame {
         this.gameState.isWaitingForStart = false;
         this.gameState.isCountingDown = false;
         
-        // Extract notes from chart_data
-        if (data.chart_data && data.chart_data.notes) {
-            this.gameState.notes = data.chart_data.notes.slice(); // Make a copy
-            console.log(`Loaded ${this.gameState.notes.length} notes from chart`);
-        } else {
-            console.error('No notes found in chart data:', data);
-            this.gameState.notes = [];
+        // 音符已經在 startGame 時載入，這裡不需要重新載入
+        // 但要確保資料同步
+        if (data.chart_data && data.chart_data.notes && this.gameState.notes.length === 0) {
+            this.gameState.notes = data.chart_data.notes.slice();
+            console.log(`Backup loaded ${this.gameState.notes.length} notes from server`);
         }
         
         this.gameStartTime = Date.now();
         
         // Hide countdown overlay
-        this.gameCountdown.style.display = 'none';
         
         // Start audio
         if (this.audio) {
@@ -348,8 +355,10 @@ class RhythmGame {
             });
         }
         
-        // Start game loop
-        this.startGameLoop();
+        // Game loop is already running from countdown, just continue
+        if (!this.gameAnimationId) {
+            this.startGameLoop();
+        }
         
         this.showNotification('遊戲開始！', 'success');
     }
@@ -396,9 +405,13 @@ class RhythmGame {
             if (this.gameState.isPlaying && !this.gameState.isPaused) {
                 this.updateGame();
                 this.renderGame();
+            } else if (this.gameState.isCountingDown || this.gameState.isWaitingForStart) {
+                // 在倒計時期間也進行渲染
+                this.updatePreviewGame();
+                this.renderGame();
             }
             
-            if (this.gameState.isPlaying) {
+            if (this.gameState.isPlaying || this.gameState.isCountingDown || this.gameState.isWaitingForStart) {
                 this.gameAnimationId = requestAnimationFrame(gameLoop);
             }
         };
@@ -440,6 +453,25 @@ class RhythmGame {
         }
     }
 
+    // 新增：預覽模式的遊戲更新
+    updatePreviewGame() {
+        const PREVIEW_DURATION = 5.0; // 5秒準備時間
+        if (this.gameState.isCountingDown) {
+            // 倒計時期間，時間從負數開始，慢慢接近0
+            // 讓倒計時結束時，遊戲時間正好是0
+            const elapsed = (Date.now() - this.countdownStartTime) / 1000;
+            this.gameState.currentTime = -PREVIEW_DURATION + elapsed;
+        } else if (this.gameState.isWaitingForStart) {
+            // 等待開始時，固定顯示，讓玩家看到即將到來的音符
+            this.gameState.currentTime = -PREVIEW_DURATION;
+        }
+        
+        // 確保預覽時間不超過0（避免在真正開始前時間變成正數）
+        if (this.gameState.currentTime > 0) {
+            this.gameState.currentTime = 0;
+        }
+    }
+
     checkAutoMiss() {
         const currentTime = this.gameState.currentTime;
         const goodTolerance = this.config.good_tolerance || 0.15;
@@ -455,10 +487,9 @@ class RhythmGame {
                 // Mark this note for removal
                 notesToRemove.push(index);
                 
-                // Auto-miss this note
-                this.socket.emit('hit_note', {
+                // Auto-miss this note (send to server for statistics)
+                this.socket.emit('auto_miss', {
                     lane: note.lane,
-                    time: currentTime,
                     note_time: note.time
                 });
             }
@@ -508,6 +539,7 @@ class RhythmGame {
         this.drawJudgmentLine(ctx, width, height);
         this.drawNotes(ctx, width, height);
         
+        // 在倒計時或等待狀態時不顯示準備覆蓋層（因為現在背景是半透明的）
         // Draw preparation overlay if waiting for start
         if (this.gameState.isWaitingForStart) {
             this.drawPreparationOverlay(ctx, width, height);
@@ -685,7 +717,14 @@ class RhythmGame {
         
         // Handle special keys
         if (key === 'enter' && this.gameState.isWaitingForStart) {
-            this.startCountdown();
+            this.gameState.isWaitingForStart = false;
+            this.gameState.isCountingDown = true;
+            this.countdownStartTime = Date.now();
+    
+            setTimeout(() => {
+                this.actuallyStartGame();
+            }, 5000); // 5 seconds wait
+    
             return;
         }
         
@@ -796,7 +835,10 @@ class RhythmGame {
         // Show judgment effect
         this.showJudgmentEffect(data.lane, data.judgment);
         this.showCentralJudgment(data.judgment);
-        this.showLaneHitEffect(data.lane);
+        // Trigger lane hit visual only on successful hits
+        if (data.hit) {
+            this.showLaneHitEffect(data.lane);
+        }
         
         // Remove the hit note from display if it was successfully hit
         if (data.hit && data.note_time !== undefined) {
@@ -912,8 +954,12 @@ class RhythmGame {
     }
 
     handleGameEnded(data) {
+        // Server emits an object in the form { results: { ... } }
+        // but showGameResults expects the inner results object.
+        // Fallback to the whole data if it already matches the expected shape.
         this.endGame();
-        this.showGameResults(data);
+        const results = data && data.results ? data.results : data;
+        this.showGameResults(results);
     }
 
     endGame() {
@@ -985,43 +1031,6 @@ class RhythmGame {
         loading.style.display = 'none';
     }
 
-    showCountdownOverlay() {
-        this.gameState.isWaitingForStart = true;
-        this.gameCountdown.style.display = 'flex';
-        
-        // Show initial message
-        document.getElementById('countdown-message').style.display = 'block';
-        document.getElementById('countdown-timer').style.display = 'none';
-    }
-
-    startCountdown() {
-        this.gameState.isCountingDown = true;
-        
-        // Hide message, show timer
-        document.getElementById('countdown-message').style.display = 'none';
-        document.getElementById('countdown-timer').style.display = 'block';
-        
-        const countdownNumber = document.getElementById('countdown-number');
-        let count = 3;
-        
-        const countdown = () => {
-            if (count > 0) {
-                countdownNumber.textContent = count;
-                countdownNumber.classList.remove('go');
-                count--;
-                this.countdownTimer = setTimeout(countdown, 1000);
-            } else {
-                countdownNumber.textContent = 'GO!';
-                countdownNumber.classList.add('go');
-                this.countdownTimer = setTimeout(() => {
-                    this.actuallyStartGame();
-                }, 500);
-            }
-        };
-        
-        countdown();
-    }
-
     actuallyStartGame() {
         // Start the game on server
         this.socket.emit('start_game', {
@@ -1031,18 +1040,19 @@ class RhythmGame {
     }
 
     drawPreparationOverlay(ctx, width, height) {
-        // Draw semi-transparent overlay
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(0, 0, width, height);
-        
-        // Draw preparation text
+        // Draw preparation text directly on canvas
         ctx.fillStyle = 'white';
-        ctx.font = '24px Roboto';
+        ctx.font = '30px Roboto';
         ctx.textAlign = 'center';
-        ctx.fillText('準備中...', width / 2, height / 2);
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 6;
+    
+        ctx.fillText('按 Enter 開始遊戲', width / 2, height / 2);
         
-        ctx.font = '16px Roboto';
-        ctx.fillText('按 Enter 開始遊戲', width / 2, height / 2 + 40);
+        // Reset shadow and baseline
+        ctx.shadowBlur = 0;
+        ctx.textBaseline = 'alphabetic';
     }
 }
 

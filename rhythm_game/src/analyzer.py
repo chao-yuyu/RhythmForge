@@ -436,6 +436,16 @@ class AudioAnalyzer:
             # 檢測 onset 和節拍
             onsets, tempo = self.combine_detection_methods()
             print(f"檢測完成，找到 {len(onsets)} 個 onset 點")
+
+            # 增加開頭延遲，避免音符過早出現
+            start_delay = 0.5  # 秒
+            if len(onsets) > 0:
+                original_onset_count = len(onsets)
+                onsets = onsets[onsets >= start_delay]
+                
+                if self.debug and len(onsets) < original_onset_count:
+                    removed_count = original_onset_count - len(onsets)
+                    print(f"為提供反應時間，移除了 {removed_count} 個在 {start_delay}s 前的音符")
             
             if len(onsets) == 0:
                 print("警告: 沒有檢測到任何 onset 點")

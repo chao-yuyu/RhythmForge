@@ -909,6 +909,57 @@ def handle_hit_note(data):
         logger.error(f"Error in handle_hit_note: {str(e)}")
         emit('game_error', {'error': str(e)})
 
+# ------------------------------
+# 新增：自動 Miss 事件處理
+# ------------------------------
+
+
+@socketio.on('auto_miss')
+def handle_auto_miss(data):
+    """處理自動 MISS（音符未擊中）"""
+    try:
+        session = game_sessions.get(request.sid)
+        if not session:
+            emit('game_error', {'error': '遊戲會話不存在'})
+            return
+
+        lane = data.get('lane')
+        note_time = data.get('note_time')
+
+        # 標記對應的音符為 miss，避免之後還能被判定
+        target_note = None
+        if session.chart_data and 'notes' in session.chart_data:
+            for note in session.chart_data['notes']:
+                if note['lane'] == lane and abs(note['time'] - note_time) < 1e-3 and not note.get('hit', False):
+                    target_note = note
+                    break
+
+        if target_note is not None:
+            target_note['hit'] = True  # 標記已處理
+            target_note['judgment'] = 'miss'
+
+        # 更新統計資料
+        session.game_stats.add_judgment('miss')
+
+        # 取得最新統計
+        stats = session.game_stats.to_dict()
+
+        emit('note_judgment', {
+            'lane': lane,
+            'judgment': 'miss',
+            'hit': False,
+            'score': stats['score'],
+            'combo': session.game_stats.combo,
+            'max_combo': stats['max_combo'],
+            'accuracy': stats['accuracy'],
+            'judgments': stats['judgments'],
+            'note_time': note_time
+        })
+
+    except Exception as e:
+        logger.error(f"Error in handle_auto_miss: {str(e)}")
+        emit('game_error', {'error': str(e)})
+
 @socketio.on('pause_game')
 def handle_pause_game():
     """暫停遊戲"""
