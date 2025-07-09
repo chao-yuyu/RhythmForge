@@ -186,8 +186,9 @@ class ChartManager:
                 chart_data = self.load_chart(json_file)
                 if chart_data:
                     charts.append({
-                        'path': str(json_file),  # 改为 'path' 以匹配前端期望
-                        'file': str(json_file),  # 保留 'file' 字段以防其他地方使用
+                        # 使用 as_posix() 以確保跨平台一致的路徑格式
+                        'path': json_file.as_posix(),
+                        'file': json_file.as_posix(),  # 保留 'file' 字段以防其他地方使用
                         'title': chart_data.get('song_title', json_file.stem),
                         'bpm': chart_data.get('bpm', 0),
                         'duration': chart_data.get('duration', 0),

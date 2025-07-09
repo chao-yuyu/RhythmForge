@@ -236,7 +236,8 @@ class RhythmGame {
             this.showLoading('載入譜面中...');
             
             // Load chart data
-            const response = await fetch(`/api/chart/${encodeURIComponent(chartPath)}`);
+            // 這裡不要再次編碼，避免 %2F 造成伺服器無法識別路徑
+            const response = await fetch(`/api/chart/${chartPath}`);
             if (!response.ok) {
                 throw new Error('Failed to load chart');
             }

@@ -436,7 +436,7 @@ def upload_music():
             'message': '檔案上傳成功',
             'filename': filename,
             'title': title,
-            'path': str(file_path),
+            'path': file_path.as_posix(),
             'size': file_size,
             'duration': duration
         })
@@ -468,7 +468,7 @@ def get_audio_files():
             files_info.append({
                 'title': file_path.stem,  # 使用檔案名稱作為標題
                 'filename': file_path.name,  # 完整檔案名稱
-                'path': str(file_path),  # 檔案路徑
+                'path': file_path.as_posix(),  # 檔案路徑，使用 POSIX 風格
                 'stem': file_path.stem,  # 檔案名稱（不含副檔名）
                 'duration': f"{int(duration//60)}:{int(duration%60):02d}" if duration else None,  # 格式化時長
                 'size': file_size

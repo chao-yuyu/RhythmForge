@@ -166,7 +166,8 @@ class YouTubeDownloader:
                 
                 if audio_file and audio_file.exists():
                     print(f"下載完成: {audio_file}")
-                    return str(audio_file), clean_title
+                    # 使用 as_posix() 以確保在各作業系統皆使用一致的分隔符
+                    return audio_file.as_posix(), clean_title
                 else:
                     print(f"找不到下載檔案，檢查目錄: {self.download_dir}")
                     # 列出目錄中的所有檔案以便調試
@@ -176,7 +177,7 @@ class YouTubeDownloader:
                         # 使用找到的第一個檔案
                         audio_file = files[0]
                         print(f"使用檔案: {audio_file}")
-                        return str(audio_file), clean_title
+                        return audio_file.as_posix(), clean_title
                     else:
                         print("沒有找到任何相關檔案")
                         if attempt < max_retries - 1:

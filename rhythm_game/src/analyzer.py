@@ -505,7 +505,8 @@ class AudioAnalyzer:
                 json.dump(chart_data, f, indent=2, ensure_ascii=False)
             
             print(f"譜面已儲存: {chart_path}")
-            return str(chart_path)
+            # 確保前端收到的路徑在任何作業系統均保持 POSIX 風格，避免分隔符差異
+            return chart_path.as_posix()
         except Exception as e:
             print(f"儲存譜面失敗: {e}")
             return None
