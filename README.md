@@ -1,4 +1,4 @@
-# 🎵 節奏遊戲 (Rhythm Game)
+# 🎵 節奏工坊 (RhythmForge Game)
 
 ![RhythmForge Game](pic/pt.png)
 
