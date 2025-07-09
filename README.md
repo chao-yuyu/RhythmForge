@@ -1,6 +1,6 @@
 # 🎵 節奏工坊 (RhythmForge Game)
 
-![RhythmForge Game](pic/pt_800*800.jpeg)
+![RhythmForge Game](pic/pt.jpeg)
 
 一個基於 Web 的節奏遊戲，可以上傳音樂檔案並自動生成遊戲譜面進行遊玩。
 
