@@ -24,6 +24,7 @@ class RhythmGame {
         this.gameCtx = null;
         this.gameAnimationId = null;
         this.audio = null;
+        this.hitSound = null;
         this.keyStates = { d: false, f: false, j: false, k: false };
         this.config = {};
         this.gameStartTime = 0;
@@ -90,6 +91,29 @@ class RhythmGame {
         // Game elements
         this.gameCanvas = document.getElementById('game-canvas');
         this.gameCtx = this.gameCanvas.getContext('2d');
+        
+        // Audio elements
+        this.hitSound = document.getElementById('hit-sound');
+        
+        // Initialize hit sound
+        if (this.hitSound) {
+            this.hitSound.volume = 0.5;
+            console.log('Hit sound element found and initialized');
+            
+            // Try to load the audio
+            this.hitSound.addEventListener('canplaythrough', () => {
+                console.log('Hit sound is ready to play');
+            });
+            
+            this.hitSound.addEventListener('error', (e) => {
+                console.error('Hit sound loading error:', e);
+            });
+            
+            // Try to load
+            this.hitSound.load();
+        } else {
+            console.error('Hit sound element not found');
+        }
         
         // UI elements
         this.scoreElement = document.getElementById('game-score');
@@ -747,6 +771,9 @@ class RhythmGame {
             this.keyStates[key] = true;
             this.updateKeyHint(key, true);
             
+            // Play hit sound when any key is pressed
+            this.playHitSound();
+            
             if (this.gameState.isPlaying && !this.gameState.isPaused) {
                 this.hitNote(lane);
             }
@@ -775,6 +802,45 @@ class RhythmGame {
             } else {
                 this.keyHints[lane].classList.remove('active');
             }
+        }
+    }
+
+    playHitSound() {
+        console.log('playHitSound called');
+        if (this.hitSound) {
+            try {
+                // Reset audio to beginning and play
+                this.hitSound.currentTime = 0;
+                const playPromise = this.hitSound.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('Hit sound played successfully');
+                    }).catch(error => {
+                        console.error('Failed to play hit sound:', error);
+                        // Try alternative method with audio context
+                        this.playHitSoundAlternative();
+                    });
+                }
+            } catch (error) {
+                console.error('Error playing hit sound:', error);
+                this.playHitSoundAlternative();
+            }
+        } else {
+            console.warn('Hit sound element not available');
+        }
+    }
+
+    playHitSoundAlternative() {
+        try {
+            // Create new audio instance for each hit
+            const audio = new Audio('hit-tree-01-266310.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(error => {
+                console.error('Alternative hit sound method also failed:', error);
+            });
+        } catch (error) {
+            console.error('Alternative hit sound creation failed:', error);
         }
     }
 
